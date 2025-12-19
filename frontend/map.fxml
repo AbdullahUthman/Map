@@ -10,5 +10,6 @@
     <Line fx:id="A_B" startX="50" startY="50" endX="150" endY="50"/>
     <Line fx:id="B_C" startX="150" startY="50" endX="250" endY="50"/>
     <Line fx:id="C_D" startX="250" startY="50" endX="350" endY="50"/>
+//This is a comment
 
 </Pane>
