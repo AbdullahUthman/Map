@@ -15,8 +15,7 @@ public class HelloApplication extends Application {
         stage.setTitle("Frankenstein Map App");
         stage.setScene(scene);
         stage.show();
-    }
-
+    }
     public static void main(String[] args) {
         launch();
     }
