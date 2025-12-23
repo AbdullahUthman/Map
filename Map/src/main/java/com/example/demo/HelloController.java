@@ -9,11 +9,27 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import java.io.*;
 import java.util.ArrayList;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+
 
 public class HelloController {
 
     @FXML
     private Pane mapPane;
+
+    @FXML
+    private Label sourceLabel;
+
+    @FXML
+    private Label destLabel;
+
+    @FXML
+    private TextField searchField;
+
+    private Integer searchedId = null;
+
+
 
     private Integer sourceId = null;
     private Integer destId = null;
@@ -38,8 +54,84 @@ public class HelloController {
             "Parking", "Pharmacy", "Clinic", "Playground", "Exit"
     };
 
+    private void runSearchBackend(String query) {
+        try {
+            Process p = new ProcessBuilder("backend.exe").start();
+
+            BufferedWriter w = new BufferedWriter(
+                    new OutputStreamWriter(p.getOutputStream())
+            );
+            w.write("F " + query + "\n");
+            w.close();
+
+            BufferedReader r = new BufferedReader(
+                    new InputStreamReader(p.getInputStream())
+            );
+
+            String line = r.readLine();
+            System.out.println("SEARCH RESULT: " + line);
+
+            if (line != null && !line.equals("-1")) {
+                int foundId = Integer.parseInt(line.trim());
+
+                // Highlight ONLY that node
+                ArrayList<Integer> highlight = new ArrayList<>();
+                highlight.add(foundId);
+                drawMap(highlight);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void onSearch() {
+            String query = searchField.getText().trim();
+            if (query.isEmpty()) return;
+
+            try {
+                Process p = new ProcessBuilder("backend.exe").start();
+
+                BufferedWriter w = new BufferedWriter(
+                        new OutputStreamWriter(p.getOutputStream())
+                );
+                w.write("F " + query + "\n");
+                w.flush();
+                w.close();
+
+                BufferedReader r = new BufferedReader(
+                        new InputStreamReader(p.getInputStream())
+                );
+
+                String line = r.readLine();
+                if (line == null) return;
+
+                int id = Integer.parseInt(line.trim());
+                searchedId = (id >= 0) ? id : null;
+
+                // 🔑 redraw using CURRENT state
+                drawMap(new ArrayList<>());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+
+
     public void initialize() {
         drawMap(new ArrayList<>());
+
+       /* searchField.textProperty().addListener((obs, o, n) -> {
+            if (n == null || n.isBlank()) {
+                searchedId = null;
+                drawMap(new ArrayList<>());
+                return;
+            }
+            runSearchBackend(n.trim());
+        });*/
+
     }
 
     private void drawMap(ArrayList<Integer> pathNodes) {
@@ -73,15 +165,11 @@ public class HelloController {
 
         // Style
         double dist = Math.hypot(POSITIONS[u][0]-POSITIONS[v][0], POSITIONS[u][1]-POSITIONS[v][1]);
-        if (dist > 220) {
-            line.setStroke(Color.LIGHTBLUE);
-            line.setStrokeWidth(3.0);
-            line.getStrokeDashArray().addAll(10d, 5d);
-            line.setOpacity(0.5);
-        } else {
-            line.setStroke(Color.GRAY);
-            line.setStrokeWidth(2.0);
-        }
+        line.setStroke(Color.DIMGRAY);
+        line.setStrokeWidth(4.0);
+        line.setOpacity(1.0);
+        line.getStrokeDashArray().clear();
+
 
         // --- HIGHLIGHTING LOGIC ---
         // If nodes are neighbors in the path list, color red
@@ -107,9 +195,25 @@ public class HelloController {
         double y = POSITIONS[id][1];
 
         Color fillColor = Color.DODGERBLUE;
-        if (sourceId != null && sourceId == id) fillColor = Color.LIMEGREEN;
-        else if (destId != null && destId == id) fillColor = Color.ORANGE;
-        else if (path.contains(id)) fillColor = Color.TOMATO;
+
+        if (sourceId != null && sourceId == id) {
+            fillColor = Color.LIMEGREEN;
+        }
+        else if (destId != null && destId == id) {
+            fillColor = Color.ORANGE;
+        }
+        else if (!path.isEmpty()
+                && id != path.get(0)
+                && id != path.get(path.size() - 1)
+                && path.contains(id)) {
+            fillColor = Color.TOMATO;
+        }
+
+        if (searchedId != null && searchedId == id) {
+            fillColor = Color.GOLD;
+        }
+
+
 
         Shape shape;
         if (id == 8) shape = new Circle(x, y, 60);
@@ -123,16 +227,21 @@ public class HelloController {
         int finalId = id;
         shape.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) { // DOUBLE CLICK
+
+
                 if (sourceId == null) {
                     sourceId = finalId;
-                    System.out.println("Source Set: " + sourceId);
+                    sourceLabel.setText(NAMES[finalId]);   // 👈 sidebar update
+                    destLabel.setText("None");
                     drawMap(new ArrayList<>());
                 } else {
                     destId = finalId;
-                    System.out.println("Dest Set: " + destId + ". Running Backend...");
+                    destLabel.setText(NAMES[finalId]);     // 👈 sidebar update
                     runBackend();
-                    sourceId = null; destId = null; // Reset for next time
+                    sourceId = null;
+                    destId = null;
                 }
+
             }
         });
 
@@ -154,7 +263,7 @@ public class HelloController {
 
             // SEND INPUT (0 19)
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
-            writer.write(sourceId + " " + destId + "\n");
+            writer.write("S " + sourceId + " " + destId + "\n");
             writer.flush();
             writer.close();
 
@@ -174,5 +283,8 @@ public class HelloController {
         } catch (Exception e) {
             e.printStackTrace(); // THIS WILL PRINT IF FILE NOT FOUND
         }
+
     }
+
+
 }
