@@ -1,20 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.Pane?>
+<?import javafx.scene.control.*?>
 <?import javafx.scene.text.Font?>
 
-<VBox alignment="CENTER" spacing="10.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.example.demo.HelloController">
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.demo.HelloController">
 
-    <Label text="City Sector Map: Double-Click Source (Green), Then Destination (Blue)">
-        <font>
-            <Font name="System Bold" size="14.0"/>
-        </font>
-    </Label>
+    <!-- LEFT PANEL -->
+    <left>
+        <VBox spacing="15" style="-fx-padding: 15; -fx-background-color: #eaeaea;" prefWidth="200">
 
-    <Pane fx:id="mapPane" prefHeight="650.0" prefWidth="850.0"
-          style="-fx-background-color: #f4f4f4; -fx-border-color: black; -fx-border-width: 2;"/>
+            <!-- Selection Panel Label -->
+            <Label text="Selection Panel">
+                <font>
+                    <Font name="System Bold" size="16"/>
+                </font>
+            </Label>
 
-</VBox>
+            <!-- Search City -->
+            <VBox spacing="5">
+                <Label text="Search City:"/>
+                <TextField fx:id="searchField"
+                           promptText="Type to search..."
+                           onAction="#onSearch"/>
+            </VBox>
+
+            <!-- Source Label -->
+            <VBox spacing="5">
+                <Label text="Source:"/>
+                <Label fx:id="sourceLabel"
+                       text="None"
+                       style="-fx-font-weight: bold; -fx-text-fill: #228B22;"/>
+            </VBox>
+
+            <!-- Destination Label -->
+            <VBox spacing="5">
+                <Label text="Destination:"/>
+                <Label fx:id="destLabel"
+                       text="None"
+                       style="-fx-font-weight: bold; -fx-text-fill: #FF8C00;"/>
+            </VBox>
+
+            <!-- Tip Label -->
+            <Label text="Tip: Double-click map blocks"
+                   style="-fx-font-size: 10; -fx-text-fill: gray;"/>
+
+            <!-- Zoom Buttons -->
+            <HBox spacing="10" alignment="CENTER">
+                <Button text="Zoom +" onAction="#zoomIn"/>
+                <Button text="Zoom -" onAction="#zoomOut"/>
+            </HBox>
+
+        </VBox>
+    </left>
+
+    <!-- CENTER PANEL -->
+    <center>
+        <VBox alignment="CENTER" spacing="10" style="-fx-padding: 10;">
+            <Label text="City Sector Map: Navigation System">
+                <font>
+                    <Font name="System Bold" size="14"/>
+                </font>
+            </Label>
+            <ScrollPane pannable="true" fitToWidth="true" fitToHeight="true">
+                <Pane fx:id="mapPane"
+                      prefHeight="650"
+                      prefWidth="850"
+                      style="-fx-border-color: black; -fx-border-width: 2;"/>
+            </ScrollPane>
+
+
+        </VBox>
+    </center>
+
+</BorderPane>
