@@ -1,12 +1,14 @@
 package com.example.demo;
 
 import javafx.fxml.FXML;
-import javafx.scene.layout.Pane;
+import javafx.scene.image.Image;
+import javafx.scene.layout.*;
 import javafx.scene.shape.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.scene.Group;
 import java.io.*;
 import java.util.ArrayList;
 import javafx.scene.control.Label;
@@ -15,8 +17,29 @@ import javafx.scene.control.TextField;
 
 public class HelloController {
 
+    private double scale = 1.0;
+
+    @FXML
+    private void zoomIn() {
+        scale += 0.1;
+        mapGroup.setScaleX(scale);
+        mapGroup.setScaleY(scale);
+    }
+
+    @FXML
+    private void zoomOut() {
+        scale = Math.max(0.5, scale - 0.1);
+        mapGroup.setScaleX(scale);
+        mapGroup.setScaleY(scale);
+    }
+
+
+
     @FXML
     private Pane mapPane;
+
+    @FXML
+    private Group mapGroup;
 
     @FXML
     private Label sourceLabel;
@@ -87,41 +110,59 @@ public class HelloController {
 
     @FXML
     private void onSearch() {
-            String query = searchField.getText().trim();
-            if (query.isEmpty()) return;
-
-            try {
-                Process p = new ProcessBuilder("backend.exe").start();
-
-                BufferedWriter w = new BufferedWriter(
-                        new OutputStreamWriter(p.getOutputStream())
-                );
-                w.write("F " + query + "\n");
-                w.flush();
-                w.close();
-
-                BufferedReader r = new BufferedReader(
-                        new InputStreamReader(p.getInputStream())
-                );
-
-                String line = r.readLine();
-                if (line == null) return;
-
-                int id = Integer.parseInt(line.trim());
-                searchedId = (id >= 0) ? id : null;
-
-                // 🔑 redraw using CURRENT state
-                drawMap(new ArrayList<>());
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        String query = searchField.getText().trim();
+        if (query.isEmpty()) {
+            searchedId = null;
+            drawMap(new ArrayList<>());
+            return;
         }
+
+        try {
+            Process p = new ProcessBuilder("backend.exe").start();
+
+            BufferedWriter w = new BufferedWriter(
+                    new OutputStreamWriter(p.getOutputStream())
+            );
+            w.write("F " + query + "\n");
+            w.flush();
+            w.close();
+
+            BufferedReader r = new BufferedReader(
+                    new InputStreamReader(p.getInputStream())
+            );
+
+            String line = r.readLine();
+            if (line == null) return;
+
+            int id = Integer.parseInt(line.trim());
+            searchedId = (id >= 0) ? id : null;
+
+            drawMap(new ArrayList<>());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 
 
     public void initialize() {
+        mapGroup = new Group();
+        mapPane.getChildren().add(mapGroup);
+
+        Image bg = new Image(getClass().getResource("/images/picture.png").toExternalForm());
+        BackgroundImage bgi = new BackgroundImage(
+                bg,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(1.0, 1.0, true, true, false, true)
+        );
+        mapPane.setBackground(new Background(bgi));
+
+
         drawMap(new ArrayList<>());
+
 
        /* searchField.textProperty().addListener((obs, o, n) -> {
             if (n == null || n.isBlank()) {
@@ -135,8 +176,7 @@ public class HelloController {
     }
 
     private void drawMap(ArrayList<Integer> pathNodes) {
-        mapPane.getChildren().clear();
-        mapPane.setStyle("-fx-background-color: #f4f4f4;");
+        mapGroup.getChildren().clear();
 
         // --- ROADS (Matches C++ Exactly) ---
         int[][] roads = {
@@ -187,7 +227,7 @@ public class HelloController {
             line.getStrokeDashArray().clear();
             line.toFront();
         }
-        mapPane.getChildren().add(line);
+        mapGroup.getChildren().add(line);
     }
 
     private void drawBlock(int id, ArrayList<Integer> path) {
@@ -252,7 +292,7 @@ public class HelloController {
         text.setY(y + 4);
         text.toFront();
 
-        mapPane.getChildren().addAll(shape, text);
+        mapGroup.getChildren().addAll(shape, text);
     }
 
     private void runBackend() {
