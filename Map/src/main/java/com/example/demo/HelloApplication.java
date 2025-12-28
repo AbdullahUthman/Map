@@ -8,7 +8,7 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class HelloApplication extends Application {
-    @Override
+//    @Override
     public void start(Stage stage) throws IOException {
         // Note: No leading slash. This looks in the same package as this class.
         FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("hello-view.fxml"));
@@ -27,5 +27,3 @@ public class HelloApplication extends Application {
         launch();
     }
 }
-
-//changes
