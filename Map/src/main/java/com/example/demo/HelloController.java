@@ -2,6 +2,7 @@ package com.example.demo;
 
 import javafx.fxml.FXML;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.shape.*;
 import javafx.scene.paint.Color;
@@ -14,10 +15,18 @@ import java.util.ArrayList;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
-
 public class HelloController {
 
+    private ImageView backgroundView;
     private double scale = 1.0;
+    private static final double CELL_W = 220;
+    private static final double CELL_H = 160;
+    private double lastMouseX;
+    private double lastMouseY;
+    private ArrayList<Integer> lastPath = new ArrayList<>();
+
+
+
 
     @FXML
     private void zoomIn() {
@@ -32,8 +41,6 @@ public class HelloController {
         mapGroup.setScaleX(scale);
         mapGroup.setScaleY(scale);
     }
-
-
 
     @FXML
     private Pane mapPane;
@@ -50,62 +57,72 @@ public class HelloController {
     @FXML
     private TextField searchField;
 
+    @FXML
+    private Label distanceLabel;
+    @FXML
+    private Label stepsLabel;
+
     private Integer searchedId = null;
-
-
-
     private Integer sourceId = null;
     private Integer destId = null;
 
-    // --- POSITIONS ---
-    private final double C1 = 150, C2 = 350, C3 = 550, C4 = 750;
-    private final double R1 = 60, R2 = 180, R3 = 300, R4 = 420, R5 = 540;
-
     private final double[][] POSITIONS = {
-            {C2, R1}, {C3, R1}, {C4, R1},           // 0-2
-            {C1, R2}, {C2, R2}, {C3, R2}, {C4, R2}, // 3-6
-            {C1, R3}, {C2, R3}, {C3, R3}, {C4, R3}, // 7-10 (8=Park)
-            {C1, R4}, {C2, R4}, {C3, R4}, {C4, R4}, // 11-14
-            {C1, R5}, {C2, R5}, {C3, R5}, {C4, R5}, {C4+140, R5} // 15-19
+            cell(2, 0),  // 0 Entrance 3
+            cell(0, 1),  // 1 Parking Area
+            cell(0, 2),  // 2 Entrance 2
+
+            cell(2, 1),  // 3 Sports Complex (big)
+            cell(1, 2),  // 4 CAFE 1
+            cell(3, 2),  // 5 Green Area 1
+
+            cell(1, 3),  // 6 ATM
+            cell(3, 3),  // 7 Business Inc Center
+
+            cell(0, 4),  // 8 Library
+            cell(1, 4),  // 9 Green Area 2
+            cell(2, 4),  // 10 Green Area 3
+
+            cell(4, 4),  // 11 Auditorium
+            cell(3, 4),  // 12 Admission Office
+
+            cell(1, 5),  // 13 Main Entrance
+            cell(2, 5),  // 14 Admin Office
+            cell(3, 5),  // 15 Student Affairs
+
+            cell(2, 2),  // 16 Cafe 2
+            cell(1, 1),  // 17 Gym
+
+            cell(2, 0),  // 18 A-Block
+            cell(3, 0),  // 19 B-Block
+            cell(4, 0),  // 20 C-Block
+            cell(5, 0),  // 21 Mosque
+            cell(6, 1),  // 22 China Block
+            cell(6, 2),  // 23 Arena
+
+            cell(4, 5)   // 24 Green Area 4
     };
+
+    private double[] cell(int col, int row) {
+        return new double[] {
+                100 + col * CELL_W,
+                80 + row * CELL_H
+        };
+    }
+
+
+
 
     private final String[] NAMES = {
-            "Entrance", "Fire Stn", "Gaming",
-            "Res Block 1", "Police Stn", "Commercial", "Food Court",
-            "Res Block 2", "Public Park", "Mall", "Cinema",
-            "Sports Cmplx", "Hospital", "School", "Library",
-            "Parking", "Pharmacy", "Clinic", "Playground", "Exit"
+            "Entrance 3", "Parking Area", "Entrance 2", "Sports Complex",
+            "CAFE 1", "Green Area 1", "ATM", "Business Inc Center",
+            "Library", "Green Area 2", "Green Area 3", "Auditorium",
+            "Admission Office", "Main Entrance", "Admin Office", "Student Affairs",
+            "Cafe 2", "Gym", "A-Block", "B-Block", "C-Block", "Mosque",
+            "China Block", "Arena", "Green Area 4"
     };
 
-    private void runSearchBackend(String query) {
-        try {
-            Process p = new ProcessBuilder("backend.exe").start();
-
-            BufferedWriter w = new BufferedWriter(
-                    new OutputStreamWriter(p.getOutputStream())
-            );
-            w.write("F " + query + "\n");
-            w.close();
-
-            BufferedReader r = new BufferedReader(
-                    new InputStreamReader(p.getInputStream())
-            );
-
-            String line = r.readLine();
-            System.out.println("SEARCH RESULT: " + line);
-
-            if (line != null && !line.equals("-1")) {
-                int foundId = Integer.parseInt(line.trim());
-
-                // Highlight ONLY that node
-                ArrayList<Integer> highlight = new ArrayList<>();
-                highlight.add(foundId);
-                drawMap(highlight);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private boolean isGreenArea(int id) {
+        return id == 5 || id == 9 || id == 10 || id == 24;
     }
 
     @FXML
@@ -119,24 +136,17 @@ public class HelloController {
 
         try {
             Process p = new ProcessBuilder("backend.exe").start();
-
-            BufferedWriter w = new BufferedWriter(
-                    new OutputStreamWriter(p.getOutputStream())
-            );
+            BufferedWriter w = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
             w.write("F " + query + "\n");
             w.flush();
             w.close();
 
-            BufferedReader r = new BufferedReader(
-                    new InputStreamReader(p.getInputStream())
-            );
-
+            BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = r.readLine();
             if (line == null) return;
 
             int id = Integer.parseInt(line.trim());
             searchedId = (id >= 0) ? id : null;
-
             drawMap(new ArrayList<>());
 
         } catch (Exception e) {
@@ -144,75 +154,83 @@ public class HelloController {
         }
     }
 
-
-
     public void initialize() {
         mapGroup = new Group();
         mapPane.getChildren().add(mapGroup);
 
-        Image bg = new Image(getClass().getResource("/images/picture.png").toExternalForm());
-        BackgroundImage bgi = new BackgroundImage(
-                bg,
-                BackgroundRepeat.NO_REPEAT,
-                BackgroundRepeat.NO_REPEAT,
-                BackgroundPosition.CENTER,
-                new BackgroundSize(1.0, 1.0, true, true, false, true)
+        // ---- BACKGROUND IMAGE ----
+        Image bgImage = new Image(
+                getClass().getResource("/images/picture.png").toExternalForm()
         );
-        mapPane.setBackground(new Background(bgi));
 
+        backgroundView = new ImageView(bgImage);
+        backgroundView.setFitWidth(1600);
+        backgroundView.setFitHeight(1200);
+        backgroundView.setPreserveRatio(false);
 
-        drawMap(new ArrayList<>());
+        // Background MUST be first
+        mapGroup.getChildren().add(backgroundView);
 
+        distanceLabel.setText("— meters");
+        stepsLabel.setText("— steps");
 
-       /* searchField.textProperty().addListener((obs, o, n) -> {
-            if (n == null || n.isBlank()) {
-                searchedId = null;
-                drawMap(new ArrayList<>());
-                return;
-            }
-            runSearchBackend(n.trim());
-        });*/
+        enablePan();
+        enableScrollZoom();
 
+        drawMap(lastPath);
     }
+
 
     private void drawMap(ArrayList<Integer> pathNodes) {
         mapGroup.getChildren().clear();
 
-        // --- ROADS (Matches C++ Exactly) ---
+        // Always add background first
+        mapGroup.getChildren().add(backgroundView);
+
         int[][] roads = {
-                // Local
-                {0,1}, {1,2}, {3,4}, {4,5}, {5,6}, {7,8}, {8,9}, {9,10},
-                {11,12}, {12,13}, {13,14}, {15,16}, {16,17}, {17,18}, {18,19},
-                {0,4}, {4,8}, {8,12}, {12,16}, {1,5}, {5,9}, {9,13}, {13,17},
-                {3,7}, {7,11}, {11,15}, {2,6}, {6,10}, {10,14}, {14,18},
-                // Express (Park 8)
-                {8,0}, {8,1}, {8,2}, {8,3}, {8,6}, {8,11}, {8,14}, {8,15}, {8,19}, {8,5}, {8,12},
-                // Express (Comm 5)
-                {5,0}, {5,2}, {5,7}, {5,10}, {5,12}, {5,14}, {5,17}
+                {0,3}, {0,1}, {0,18},
+                {1,2}, {1,3}, {1,17},
+                {2,4}, {2,16},
+                {3,4}, {3,5}, {3,23},
+                {4,5}, {4,6}, {4,16},
+                {5,7}, {5,11},
+                {6,7}, {6,10}, {6,12}, {6,14},
+                {7,11}, {7,12}, {7,15},
+                {8,9}, {8,10}, {8,13}, {8,14},
+                {9,10}, {9,13},
+                {10,12}, {10,13},
+                {11,12}, {11,23},
+                {12,13}, {12,24},
+                {13,14}, {13,15},
+                {14,15}, {14,24},
+                {15,24},
+                {16,17}, {16,24},
+                {17,18}, {17,23},
+                {18,19}, {18,20},
+                {19,20}, {19,21},
+                {20,21},
+                {21,22},
+                {22,23},
+                {23,24}
         };
 
+        // Roads second
         for (int[] road : roads) {
             drawLine(road[0], road[1], pathNodes);
         }
 
-        for (int i = 0; i < 20; i++) {
+        // Nodes last
+        for (int i = 0; i < NAMES.length; i++) {
             drawBlock(i, pathNodes);
         }
     }
 
+
     private void drawLine(int u, int v, ArrayList<Integer> path) {
         Line line = new Line(POSITIONS[u][0], POSITIONS[u][1], POSITIONS[v][0], POSITIONS[v][1]);
-
-        // Style
-        double dist = Math.hypot(POSITIONS[u][0]-POSITIONS[v][0], POSITIONS[u][1]-POSITIONS[v][1]);
         line.setStroke(Color.DIMGRAY);
-        line.setStrokeWidth(4.0);
-        line.setOpacity(1.0);
-        line.getStrokeDashArray().clear();
+        line.setStrokeWidth(2.5);
 
-
-        // --- HIGHLIGHTING LOGIC ---
-        // If nodes are neighbors in the path list, color red
         boolean isPath = false;
         if (path.contains(u) && path.contains(v)) {
             int idxU = path.indexOf(u);
@@ -222,10 +240,7 @@ public class HelloController {
 
         if (isPath) {
             line.setStroke(Color.RED);
-            line.setStrokeWidth(5.0);
-            line.setOpacity(1.0);
-            line.getStrokeDashArray().clear();
-            line.toFront();
+            line.setStrokeWidth(4.0);
         }
         mapGroup.getChildren().add(line);
     }
@@ -234,18 +249,13 @@ public class HelloController {
         double x = POSITIONS[id][0];
         double y = POSITIONS[id][1];
 
-        Color fillColor = Color.DODGERBLUE;
+        Color fillColor = isGreenArea(id) ? Color.LIGHTGREEN : Color.DODGERBLUE;
 
         if (sourceId != null && sourceId == id) {
             fillColor = Color.LIMEGREEN;
-        }
-        else if (destId != null && destId == id) {
+        } else if (destId != null && destId == id) {
             fillColor = Color.ORANGE;
-        }
-        else if (!path.isEmpty()
-                && id != path.get(0)
-                && id != path.get(path.size() - 1)
-                && path.contains(id)) {
+        } else if (!path.isEmpty() && id != path.get(0) && id != path.get(path.size() - 1) && path.contains(id)) {
             fillColor = Color.TOMATO;
         }
 
@@ -253,77 +263,142 @@ public class HelloController {
             fillColor = Color.GOLD;
         }
 
-
-
         Shape shape;
-        if (id == 8) shape = new Circle(x, y, 60);
-        else shape = new Rectangle(x - 65, y - 25, 130, 50);
+        if (id == 3) {
+            shape = new Rectangle(x - 80, y - 50, 160, 100);
+        } else if (isGreenArea(id)) {
+            shape = new Circle(x, y, 30);
+        } else {
+            shape = new Rectangle(x - 60, y - 25, 120, 50);
+        }
 
         shape.setFill(fillColor);
         shape.setStroke(Color.BLACK);
         shape.setStrokeWidth(1.5);
-        shape.toFront();
 
         int finalId = id;
         shape.setOnMouseClicked(e -> {
-            if (e.getClickCount() == 2) { // DOUBLE CLICK
-
+            if (e.getClickCount() == 2) {
+                if (isGreenArea(finalId)) {
+                    System.out.println("Cannot select green area");
+                    return;
+                }
 
                 if (sourceId == null) {
                     sourceId = finalId;
-                    sourceLabel.setText(NAMES[finalId]);   // 👈 sidebar update
+                    sourceLabel.setText(NAMES[finalId]);
                     destLabel.setText("None");
                     drawMap(new ArrayList<>());
                 } else {
                     destId = finalId;
-                    destLabel.setText(NAMES[finalId]);     // 👈 sidebar update
+                    destLabel.setText(NAMES[finalId]);
                     runBackend();
                     sourceId = null;
                     destId = null;
                 }
-
             }
         });
 
         Text text = new Text(NAMES[id]);
-        text.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        text.setFill(Color.WHITE);
+        text.setFont(Font.font("Arial", FontWeight.BOLD, 10));
+        text.setFill(isGreenArea(id) ? Color.DARKGREEN : Color.WHITE);
         text.setX(x - text.getLayoutBounds().getWidth() / 2);
-        text.setY(y + 4);
-        text.toFront();
+        text.setY(y + 3);
 
         mapGroup.getChildren().addAll(shape, text);
     }
 
     private void runBackend() {
         try {
-            // ProcessBuilder
-            ProcessBuilder pb = new ProcessBuilder("backend.exe");
-            Process p = pb.start();
+            Process p = new ProcessBuilder("backend.exe").start();
 
-            // SEND INPUT (0 19)
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
+            BufferedWriter writer =
+                    new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
             writer.write("S " + sourceId + " " + destId + "\n");
             writer.flush();
             writer.close();
 
-            // READ OUTPUT
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line = reader.readLine();
-
-            System.out.println("C++ OUTPUT: " + line); // CHECK THIS IN CONSOLE
+            BufferedReader reader =
+                    new BufferedReader(new InputStreamReader(p.getInputStream()));
 
             ArrayList<Integer> path = new ArrayList<>();
-            if (line != null && !line.startsWith("No")) {
-                String[] parts = line.trim().split("\\s+");
-                for (String s : parts) path.add(Integer.parseInt(s));
+            int distance = -1;
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                // DEBUG (keep this for now)
+                System.out.println("RAW BACKEND: [" + line + "]");
+
+                // Distance (optional)
+                if (line.startsWith("DIST")) {
+                    distance = Integer.parseInt(line.replaceAll("[^0-9]", ""));
+                    continue;
+                }
+
+                // 🔥 PATH: any line containing node IDs
+                if (Character.isDigit(line.charAt(0))) {
+                    String[] parts = line.split("\\s+");
+                    for (String s : parts) {
+                        if (s.matches("\\d+")) {
+                            path.add(Integer.parseInt(s));
+                        }
+                    }
+                }
             }
-            drawMap(path);
+
+
+            // 🔴 update UI
+            if (distance >= 0) {
+                distanceLabel.setText(distance + " meters");
+                stepsLabel.setText((int)(distance * 0.76) + " steps");
+            }
+
+            // 🔥 THIS is what re-enables highlighting
+            lastPath = path;
+            drawMap(lastPath);
 
         } catch (Exception e) {
-            e.printStackTrace(); // THIS WILL PRINT IF FILE NOT FOUND
+            e.printStackTrace();
         }
+    }
 
+
+    private void enablePan() {
+        mapPane.setOnMousePressed(e -> {
+            lastMouseX = e.getSceneX();
+            lastMouseY = e.getSceneY();
+        });
+
+        mapPane.setOnMouseDragged(e -> {
+            double dx = e.getSceneX() - lastMouseX;
+            double dy = e.getSceneY() - lastMouseY;
+
+            mapGroup.setTranslateX(mapGroup.getTranslateX() + dx);
+            mapGroup.setTranslateY(mapGroup.getTranslateY() + dy);
+
+            lastMouseX = e.getSceneX();
+            lastMouseY = e.getSceneY();
+        });
+    }
+
+
+
+    private void enableScrollZoom() {
+        mapPane.setOnScroll(e -> {
+            double zoomFactor = (e.getDeltaY() > 0) ? 1.1 : 0.9;
+
+            scale *= zoomFactor;
+            scale = Math.max(0.5, Math.min(scale, 3.0)); // clamp
+
+            mapGroup.setScaleX(scale);
+            mapGroup.setScaleY(scale);
+
+            e.consume();
+        });
     }
 
 
