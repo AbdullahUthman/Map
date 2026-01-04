@@ -23,27 +23,27 @@
 
             <!-- Search City -->
             <VBox spacing="5">
-                <Label text="Search City:"/>
+                <Label text="Search University:"/>
                 <TextField fx:id="searchField"
                            promptText="Type to search..."
                            onAction="#onSearch"/>
             </VBox>
 
             <!-- Source Label -->
-            <VBox spacing="5">
+            <!--<VBox spacing="5">
                 <Label text="Source:"/>
                 <Label fx:id="sourceLabel"
                        text="None"
                        style="-fx-font-weight: bold; -fx-text-fill: #228B22;"/>
-            </VBox>
+            </VBox> -->
 
             <!-- Destination Label -->
-            <VBox spacing="5">
+          <!--  <VBox spacing="5">
                 <Label text="Destination:"/>
                 <Label fx:id="destLabel"
                        text="None"
                        style="-fx-font-weight: bold; -fx-text-fill: #FF8C00;"/>
-            </VBox>
+            </VBox> -->
 
             <!-- Tip Label -->
             <Label text="Tip: Double-click map blocks"
@@ -55,13 +55,42 @@
                 <Button text="Zoom -" onAction="#zoomOut"/>
             </HBox>
 
+            <Label text="Navigation Info"
+                   style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+
+            <Label fx:id="sourceLabel"
+                   text="Source: None"
+                   style="-fx-font-size: 16px;" />
+
+            <Label fx:id="destLabel"
+                   text="Destination: None"
+                   style="-fx-font-size: 16px;" />
+
+            <Separator />
+
+            <Label text="Shortest Distance"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold;" />
+
+            <Label fx:id="distanceLabel"
+                   text="— meters"
+                   style="-fx-font-size: 16px;" />
+
+            <Label text="Estimated Steps"
+                   style="-fx-font-size: 15px; -fx-font-weight: bold;" />
+
+            <Label fx:id="stepsLabel"
+                   text="— steps"
+                   style="-fx-font-size: 16px;" />
+
+            <Separator />
+
         </VBox>
     </left>
 
     <!-- CENTER PANEL -->
     <center>
         <VBox alignment="CENTER" spacing="10" style="-fx-padding: 10;">
-            <Label text="City Sector Map: Navigation System">
+            <Label text="University Map: Navigation System">
                 <font>
                     <Font name="System Bold" size="14"/>
                 </font>
