@@ -29,22 +29,6 @@
                            onAction="#onSearch"/>
             </VBox>
 
-            <!-- Source Label -->
-            <!--<VBox spacing="5">
-                <Label text="Source:"/>
-                <Label fx:id="sourceLabel"
-                       text="None"
-                       style="-fx-font-weight: bold; -fx-text-fill: #228B22;"/>
-            </VBox> -->
-
-            <!-- Destination Label -->
-          <!--  <VBox spacing="5">
-                <Label text="Destination:"/>
-                <Label fx:id="destLabel"
-                       text="None"
-                       style="-fx-font-weight: bold; -fx-text-fill: #FF8C00;"/>
-            </VBox> -->
-
             <!-- Tip Label -->
             <Label text="Tip: Double-click map blocks"
                    style="-fx-font-size: 10; -fx-text-fill: gray;"/>
@@ -54,6 +38,13 @@
                 <Button text="Zoom +" onAction="#zoomIn"/>
                 <Button text="Zoom -" onAction="#zoomOut"/>
             </HBox>
+
+            <!-- GRAPH STATS BUTTON -->
+            <Button text="📊 Graph Statistics"
+                    onAction="#showGraphStats"
+                    style="-fx-font-size: 13px; -fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;"/>
+
+            <Separator />
 
             <Label text="Navigation Info"
                    style="-fx-font-size: 20px; -fx-font-weight: bold;" />
@@ -101,8 +92,6 @@
                       prefWidth="850"
                       style="-fx-border-color: black; -fx-border-width: 2;"/>
             </ScrollPane>
-
-
         </VBox>
     </center>
 
