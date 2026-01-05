@@ -14,6 +14,8 @@ import java.io.*;
 import java.util.ArrayList;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Button;
+import javafx.scene.control.Separator;
 
 public class HelloController {
 
@@ -148,6 +150,146 @@ public class HelloController {
             int id = Integer.parseInt(line.trim());
             searchedId = (id >= 0) ? id : null;
             drawMap(new ArrayList<>());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void showGraphStats() {
+        try {
+            Process p = new ProcessBuilder("backend.exe").start();
+
+            BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(p.getOutputStream())
+            );
+            writer.write("G\n");  // Graph stats mode
+            writer.flush();
+            writer.close();
+
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(p.getInputStream())
+            );
+
+            // Parse statistics
+            int nodes = 0, selectable = 0, edges = 0, maxDegree = 0, maxNode = 0, diameter = 0;
+            double avgDegree = 0.0, density = 0.0;
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                String[] parts = line.split(" ");
+                switch (parts[0]) {
+                    case "NODES":
+                        nodes = Integer.parseInt(parts[1]);
+                        break;
+                    case "SELECTABLE":
+                        selectable = Integer.parseInt(parts[1]);
+                        break;
+                    case "EDGES":
+                        edges = Integer.parseInt(parts[1]);
+                        break;
+                    case "MAX_DEGREE":
+                        maxDegree = Integer.parseInt(parts[1]);
+                        break;
+                    case "MAX_NODE":
+                        maxNode = Integer.parseInt(parts[1]);
+                        break;
+                    case "AVG_DEGREE":
+                        avgDegree = Double.parseDouble(parts[1]);
+                        break;
+                    case "DIAMETER":
+                        diameter = Integer.parseInt(parts[1]);
+                        break;
+                    case "DENSITY":
+                        density = Double.parseDouble(parts[1]);
+                        break;
+                }
+            }
+
+            // Create popup window
+            javafx.stage.Stage statsStage = new javafx.stage.Stage();
+            statsStage.setTitle("Graph Statistics");
+
+            VBox content = new VBox(15);
+            content.setStyle("-fx-padding: 20; -fx-background-color: #f5f5f5;");
+
+            Label title = new Label("📊 Graph Statistics Analysis");
+            title.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+            title.setStyle("-fx-text-fill: #2196F3;");
+
+            Separator sep1 = new Separator();
+
+            Label basicInfo = new Label("Basic Information:");
+            basicInfo.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+
+            Label nodesLabel = new Label("• Total Nodes: " + nodes);
+            nodesLabel.setFont(Font.font(13));
+
+            Label selectableLabel = new Label("• Selectable Locations: " + selectable);
+            selectableLabel.setFont(Font.font(13));
+
+            Label waypointsLabel = new Label("• Waypoints (Green Areas): " + (nodes - selectable));
+            waypointsLabel.setFont(Font.font(13));
+
+            Label edgesLabel = new Label("• Total Edges: " + edges);
+            edgesLabel.setFont(Font.font(13));
+
+            Separator sep2 = new Separator();
+
+            Label connectivityInfo = new Label("Connectivity Analysis:");
+            connectivityInfo.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+
+            Label maxDegreeLabel = new Label("• Most Connected Node: " + NAMES[maxNode] + " (" + maxDegree + " connections)");
+            maxDegreeLabel.setFont(Font.font(13));
+
+            Label avgDegreeLabel = new Label(String.format("• Average Connections per Node: %.2f", avgDegree));
+            avgDegreeLabel.setFont(Font.font(13));
+
+            Label diameterLabel = new Label("• Graph Diameter: " + diameter + " meters");
+            diameterLabel.setFont(Font.font(13));
+            Label diameterExplain = new Label("  (Longest shortest path in the graph)");
+            diameterExplain.setFont(Font.font(11));
+            diameterExplain.setStyle("-fx-text-fill: gray;");
+
+            Label densityLabel = new Label(String.format("• Graph Density: %.4f", density));
+            densityLabel.setFont(Font.font(13));
+            Label densityExplain = new Label("  (Ratio of actual edges to maximum possible edges)");
+            densityExplain.setFont(Font.font(11));
+            densityExplain.setStyle("-fx-text-fill: gray;");
+
+            Separator sep3 = new Separator();
+
+            Label complexityInfo = new Label("Algorithm Complexity:");
+            complexityInfo.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+
+            Label bfsComplexity = new Label("• BFS Search: O(V + E) = O(" + nodes + " + " + edges + ")");
+            bfsComplexity.setFont(Font.font(13));
+
+            Label dijkstraComplexity = new Label("• Dijkstra: O((V + E) log V) = O((" + nodes + " + " + edges + ") log " + nodes + ")");
+            dijkstraComplexity.setFont(Font.font(13));
+
+            Button closeBtn = new Button("Close");
+            closeBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 13px;");
+            closeBtn.setOnAction(e -> statsStage.close());
+
+            content.getChildren().addAll(
+                    title, sep1,
+                    basicInfo, nodesLabel, selectableLabel, waypointsLabel, edgesLabel,
+                    sep2,
+                    connectivityInfo, maxDegreeLabel, avgDegreeLabel, diameterLabel, diameterExplain,
+                    densityLabel, densityExplain,
+                    sep3,
+                    complexityInfo, bfsComplexity, dijkstraComplexity,
+                    closeBtn
+            );
+
+            javafx.scene.Scene scene = new javafx.scene.Scene(content, 500, 600);
+            statsStage.setScene(scene);
+            statsStage.show();
 
         } catch (Exception e) {
             e.printStackTrace();
