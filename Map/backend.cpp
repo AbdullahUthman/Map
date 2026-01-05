@@ -316,12 +316,80 @@ void dijkstra(int start, int end, int* dist, int* parent) {
     delete[] visited;
 }
 
+/* ---------- GRAPH STATISTICS ---------- */
+void computeGraphStats() {
+    int totalNodes = NUM_NODES;
+    int totalEdges = 0;
+    int selectableNodes = 0;
+
+    // Count edges and selectable nodes
+    for (int i = 0; i < NUM_NODES; i++) {
+        totalEdges += adj[i].edgeCount;
+        if (!isGreenArea(i)) selectableNodes++;
+    }
+    totalEdges /= 2; // Each edge counted twice (undirected)
+
+    // Find node with max connections
+    int maxDegree = 0;
+    int maxDegreeNode = 0;
+    for (int i = 0; i < NUM_NODES; i++) {
+        if (adj[i].edgeCount > maxDegree) {
+            maxDegree = adj[i].edgeCount;
+            maxDegreeNode = i;
+        }
+    }
+
+    // Calculate average degree
+    double avgDegree = (2.0 * totalEdges) / totalNodes;
+
+    // Find diameter (longest shortest path)
+    int diameter = 0;
+    for (int i = 0; i < NUM_NODES; i++) {
+        if (isGreenArea(i)) continue;
+
+        int* dist = new int[NUM_NODES];
+        int* parent = new int[NUM_NODES];
+
+        dijkstra(i, -1, dist, parent); // Run dijkstra from node i
+
+        for (int j = 0; j < NUM_NODES; j++) {
+            if (isGreenArea(j)) continue;
+            if (dist[j] != INF && dist[j] > diameter) {
+                diameter = dist[j];
+            }
+        }
+
+        delete[] dist;
+        delete[] parent;
+    }
+
+    // Calculate density
+    int maxPossibleEdges = (totalNodes * (totalNodes - 1)) / 2;
+    double density = (double)totalEdges / maxPossibleEdges;
+
+    // Output statistics
+    cout << "NODES " << totalNodes << endl;
+    cout << "SELECTABLE " << selectableNodes << endl;
+    cout << "EDGES " << totalEdges << endl;
+    cout << "MAX_DEGREE " << maxDegree << endl;
+    cout << "MAX_NODE " << maxDegreeNode << endl;
+    cout << "AVG_DEGREE " << avgDegree << endl;
+    cout << "DIAMETER " << diameter << endl;
+    cout << "DENSITY " << density << endl;
+}
+
 /* ---------- MAIN ---------- */
 int main() {
     setupUniversity();
 
     char mode;
     cin >> mode;
+
+    // Graph Statistics Mode
+    if (mode == 'G') {
+        computeGraphStats();
+        return 0;
+    }
 
     if (mode == 'F') {
         cin.ignore();
